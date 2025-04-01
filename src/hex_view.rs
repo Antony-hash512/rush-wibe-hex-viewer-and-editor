@@ -23,9 +23,14 @@ impl HexView {
 
         let scrolled_window = ScrolledWindow::builder()
             .child(&text_view)
+            .vexpand(true)
+            .hscrollbar_policy(gtk::PolicyType::Automatic)
+            .vscrollbar_policy(gtk::PolicyType::Automatic)
             .build();
 
         container.append(&scrolled_window);
+
+        container.set_vexpand(true);
 
         Self {
             container,

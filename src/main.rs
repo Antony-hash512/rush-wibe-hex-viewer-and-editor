@@ -1,20 +1,49 @@
 mod hex_view;
 
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Button, Box, Label, FileChooserDialog, FileChooserAction};
-use gio::prelude::*;
+use gtk::{Application, ApplicationWindow, Button, Box, Label, FileChooserDialog, FileChooserAction, CssProvider, gdk};
+use std::fs;
 
 const APP_ID: &str = "org.gtk_rs.HexEditor";
 
 fn main() {
+    // Инициализируем GTK
+    gtk::init().expect("Не удалось инициализировать GTK");
+    
     // Создаем новое приложение
     let app = Application::builder()
         .application_id(APP_ID)
         .flags(gio::ApplicationFlags::FLAGS_NONE)
         .build();
     
+    // Загружаем CSS стили
+    load_css();
+    
     app.connect_activate(build_ui);
     app.run();
+}
+
+fn load_css() {
+    // Загружаем CSS из файла
+    let provider = CssProvider::new();
+    
+    // Читаем содержимое CSS-файла
+    match fs::read_to_string("src/style.css") {
+        Ok(css) => {
+            // Загружаем CSS содержимое
+            provider.load_from_data(&css);
+            
+            // Применяем стили ко всему приложению
+            gtk::style_context_add_provider_for_display(
+                &gdk::Display::default().expect("Не удалось получить дисплей"),
+                &provider,
+                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
+        },
+        Err(e) => {
+            eprintln!("Не удалось загрузить CSS файл: {}", e);
+        }
+    }
 }
 
 fn build_ui(app: &Application) {
@@ -63,11 +92,22 @@ fn build_ui(app: &Application) {
     let hex_view = hex_view::HexView::new();
     vbox.append(hex_view.get_container());
 
+    // Получаем слабую ссылку на окно для использования в замыкании
+    let window_weak = window.downgrade();
+    
     let hex_view_clone = hex_view.clone();
     open_button.connect_clicked(move |_| {
+        // Получаем сильную ссылку на окно из слабой
+        let window = match window_weak.upgrade() {
+            Some(window) => window,
+            None => return,
+        };
+        
         let dialog = FileChooserDialog::builder()
             .title("Выберите файл")
             .action(FileChooserAction::Open)
+            .transient_for(&window) // Указываем родительское окно
+            .modal(true) // Делаем диалог модальным
             .build();
 
         dialog.add_button("Отмена", gtk::ResponseType::Cancel);
@@ -84,6 +124,7 @@ fn build_ui(app: &Application) {
                                     .text("Ошибка")
                                     .secondary_text(&format!("Не удалось открыть файл: {}", e))
                                     .message_type(gtk::MessageType::Error)
+                                    .transient_for(dialog) // Указываем родительское окно для диалога ошибки
                                     .build();
                                 error_dialog.connect_response(|dialog, _| dialog.close());
                                 error_dialog.show();
