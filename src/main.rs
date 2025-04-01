@@ -51,7 +51,7 @@ fn build_ui(app: &Application) {
     // Создаем главное окно
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("Hex Editor")
+        .title("Hex Viewer")
         .default_width(800)
         .default_height(600)
         .build();
@@ -73,7 +73,7 @@ fn build_ui(app: &Application) {
         .build();
 
     let title = Label::builder()
-        .label("Hex Editor")
+        .label("Hex Viewer")
         .css_classes(vec!["title-1"])
         .build();
     header_box.append(&title);
