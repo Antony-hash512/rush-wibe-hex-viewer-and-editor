@@ -20,7 +20,13 @@ impl HexView {
             .editable(false)
             .monospace(true)
             .build();
+            
+        // Настраиваем шрифт явно через PangoFontDescription
+        let context = text_view.pango_context();
+        let font_desc = gtk::pango::FontDescription::from_string("DejaVu Sans Mono 12");
+        context.set_font_description(Some(&font_desc));
 
+        // Настраиваем прокручиваемое окно для расширения по вертикали
         let scrolled_window = ScrolledWindow::builder()
             .child(&text_view)
             .vexpand(true)
@@ -29,7 +35,8 @@ impl HexView {
             .build();
 
         container.append(&scrolled_window);
-
+        
+        // Устанавливаем расширение по вертикали для всего контейнера
         container.set_vexpand(true);
 
         Self {
@@ -51,20 +58,24 @@ impl HexView {
         let mut offset = 0;
 
         for chunk in buffer.chunks(16) {
-            // Добавляем смещение
+            // Добавляем смещение (8 hex-цифр)
             hex_display.push_str(&format!("{:08x}  ", offset));
             
-            // Добавляем hex-значения
+            // Добавляем hex-значения с фиксированной шириной
             for (i, &byte) in chunk.iter().enumerate() {
                 hex_display.push_str(&format!("{:02x} ", byte));
                 if i == 7 {
-                    hex_display.push_str(" ");
+                    hex_display.push_str(" "); // Дополнительный пробел после 8-го байта
                 }
             }
 
             // Дополняем строку пробелами, если не хватает байтов
             if chunk.len() < 16 {
-                let padding = (16 - chunk.len()) * 3;
+                // Вычисляем количество пробелов для выравнивания
+                let mut padding = (16 - chunk.len()) * 3; // 3 символа на каждый байт (2 hex + пробел)
+                if chunk.len() <= 8 {
+                    padding += 1; // Дополнительный пробел, который добавляется после 8-го байта
+                }
                 hex_display.push_str(&" ".repeat(padding));
             }
 
@@ -77,6 +88,12 @@ impl HexView {
                     hex_display.push('.');
                 }
             }
+            
+            // Добавляем пробелы, если ASCII-часть меньше 16 символов
+            if chunk.len() < 16 {
+                hex_display.push_str(&".".repeat(16 - chunk.len()));
+            }
+            
             hex_display.push_str("|\n");
 
             offset += chunk.len();
