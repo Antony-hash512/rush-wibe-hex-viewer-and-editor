@@ -1,0 +1,9 @@
+[package]
+name = "hex_rust_editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gtk = { version = "0.6.6", package = "gtk4" }
+gio = "0.17.9"
+glib = "0.17.9" 
