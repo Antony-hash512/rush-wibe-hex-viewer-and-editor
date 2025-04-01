@@ -47,4 +47,19 @@ window {
 
 box {
     background-color: #333333;
+}
+
+/* Стили для диалога выбора файлов */
+filechooser {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+filechooser placessidebar {
+    background-color: #2a2a2a;
+}
+
+filechooser .view {
+    background-color: #2a2a2a;
+    color: #f0f0f0;
 } 

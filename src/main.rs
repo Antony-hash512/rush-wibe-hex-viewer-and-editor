@@ -1,7 +1,8 @@
 mod hex_view;
 
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Button, Box, Label, FileChooserDialog, FileChooserAction, CssProvider, gdk};
+use gtk::{Application, ApplicationWindow, Button, Box, Label, CssProvider, gdk, 
+          FileChooserNative, FileChooserAction};
 use std::fs;
 
 const APP_ID: &str = "org.gtk_rs.HexEditor";
@@ -103,18 +104,30 @@ fn build_ui(app: &Application) {
             None => return,
         };
         
-        let dialog = FileChooserDialog::builder()
+        // Используем FileChooserNative вместо FileChooserDialog
+        // Это приведёт к использованию нативного диалога выбора файлов операционной системы
+        let native_dialog = FileChooserNative::builder()
             .title("Выберите файл")
             .action(FileChooserAction::Open)
-            .transient_for(&window) // Указываем родительское окно
-            .modal(true) // Делаем диалог модальным
+            .transient_for(&window)
+            .modal(true)
             .build();
-
-        dialog.add_button("Отмена", gtk::ResponseType::Cancel);
-        dialog.add_button("Открыть", gtk::ResponseType::Accept);
-
+        
+        // Рабочий каталог текущего процесса
+        if let Err(e) = native_dialog.set_current_folder(Some(&gio::File::for_path("./"))) {
+            eprintln!("Не удалось установить текущую папку: {}", e);
+        }
+        
+        // Добавляем фильтр для всех файлов
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some("Все файлы"));
+        filter.add_pattern("*");
+        native_dialog.add_filter(&filter);
+        
         let hex_view = hex_view_clone.clone();
-        dialog.connect_response(move |dialog, response| {
+        
+        // Обрабатываем ответ от диалога
+        native_dialog.connect_response(move |dialog, response| {
             if response == gtk::ResponseType::Accept {
                 if let Some(file) = dialog.file() {
                     if let Some(path) = file.path() {
@@ -124,7 +137,7 @@ fn build_ui(app: &Application) {
                                     .text("Ошибка")
                                     .secondary_text(&format!("Не удалось открыть файл: {}", e))
                                     .message_type(gtk::MessageType::Error)
-                                    .transient_for(dialog) // Указываем родительское окно для диалога ошибки
+                                    .transient_for(&window)
                                     .build();
                                 error_dialog.connect_response(|dialog, _| dialog.close());
                                 error_dialog.show();
@@ -133,10 +146,10 @@ fn build_ui(app: &Application) {
                     }
                 }
             }
-            dialog.close();
         });
-
-        dialog.show();
+        
+        // Показываем диалог
+        native_dialog.show();
     });
 
     // Добавляем контейнер в окно
