@@ -1,6 +1,6 @@
 # Short description:
 This is a plain viewer for files in hexadecimal format.
-It was created by wibe-coding on the Rust language using GTK for the graphical interface.
+It was created by vibe-coding on the Rust language using GTK for the graphical interface.
 Editing functionality is planned for one of the upcoming versions in the main branch.
 This branch 'viewer' is fully completed.
 In this branch, the utility is designed only for viewing.
