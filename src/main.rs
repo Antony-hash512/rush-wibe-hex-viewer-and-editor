@@ -2,7 +2,7 @@ mod hex_view;
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Button, Box, Label, CssProvider, gdk, 
-          FileChooserNative, FileChooserAction};
+          FileChooserDialog, FileChooserAction, ResponseType};
 use std::fs;
 
 const APP_ID: &str = "org.gtk_rs.HexEditor";
@@ -104,17 +104,22 @@ fn build_ui(app: &Application) {
             None => return,
         };
         
-        // Используем FileChooserNative вместо FileChooserDialog
-        // Это приведёт к использованию нативного диалога выбора файлов операционной системы
-        let native_dialog = FileChooserNative::builder()
+        // Используем FileChooserDialog вместо FileChooserNative
+        let dialog = FileChooserDialog::builder()
             .title("Выберите файл")
             .action(FileChooserAction::Open)
             .transient_for(&window)
             .modal(true)
             .build();
         
+        // Добавляем кнопки
+        dialog.add_buttons(&[
+            ("Отмена", ResponseType::Cancel),
+            ("Открыть", ResponseType::Accept),
+        ]);
+        
         // Рабочий каталог текущего процесса
-        if let Err(e) = native_dialog.set_current_folder(Some(&gio::File::for_path("./"))) {
+        if let Err(e) = dialog.set_current_folder(Some(&gio::File::for_path("./"))) {
             eprintln!("Не удалось установить текущую папку: {}", e);
         }
         
@@ -122,13 +127,13 @@ fn build_ui(app: &Application) {
         let filter = gtk::FileFilter::new();
         filter.set_name(Some("Все файлы"));
         filter.add_pattern("*");
-        native_dialog.add_filter(&filter);
+        dialog.add_filter(&filter);
         
         let hex_view = hex_view_clone.clone();
         
         // Обрабатываем ответ от диалога
-        native_dialog.connect_response(move |dialog, response| {
-            if response == gtk::ResponseType::Accept {
+        dialog.connect_response(move |dialog, response| {
+            if response == ResponseType::Accept {
                 if let Some(file) = dialog.file() {
                     if let Some(path) = file.path() {
                         if let Some(path_str) = path.to_str() {
@@ -146,10 +151,11 @@ fn build_ui(app: &Application) {
                     }
                 }
             }
+            dialog.close();
         });
         
         // Показываем диалог
-        native_dialog.show();
+        dialog.show();
     });
 
     // Добавляем контейнер в окно
